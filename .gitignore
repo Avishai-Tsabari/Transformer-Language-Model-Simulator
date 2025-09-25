@@ -1,0 +1,23 @@
+# virtual environment
+.venv
+
+# pycache
+__pycache__
+
+# logs
+logs
+
+# checkpoints
+checkpoints
+
+# datasets folder
+datasets
+
+# scraping folder
+scraping
+scrape_lyrics.py
+
+# PROJECT_STRUCTURE.md, # README_SCRAPING.md, # USAGE_GUIDE.md
+PROJECT_STRUCTURE.md
+README_SCRAPING.md
+USAGE_GUIDE.md

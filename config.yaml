@@ -1,0 +1,37 @@
+hparams:
+  vocab_size: 3000  # Increased for word-level tokenization
+  d_model: 32 #32
+  num_heads: 1 #1
+  num_layers: 2 #2
+  d_ff: 1024
+  sequence_length: 64 # 32
+  batch_size: 64 #64
+  learning_rate: 0.0001
+  max_epochs: 100
+  patience: 10
+  min_delta: 0.001
+  warmup_steps: 1000
+  weight_decay: 0.01
+  dropout: 0.1
+  train_split: 0.7  # Adjusted to give more data to validation
+  val_split: 0.2   # Increased validation split
+  num_workers: 0
+  accelerator: "auto"
+  devices: 1
+  precision: "32"
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 1
+  log_every_n_steps: 50
+  val_check_interval: 1.0
+  save_top_k: 3
+  monitor: "val/loss"
+  mode: "min"
+
+paths:
+  corpus_path: "sample_corpus.txt"
+  save_dir: "./checkpoints"
+  log_dir: "./logs"
+
+general:
+  experiment_name: "transformer_lm"
+  create_sample: True
