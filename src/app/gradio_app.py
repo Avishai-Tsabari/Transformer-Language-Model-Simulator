@@ -278,45 +278,6 @@ class GradioApp:
             gr.Markdown("Generate text with a small transformer model. Choose between full response generation or interactive token-by-token prediction.")
             
             with gr.Tabs():
-                # Full Response Generation Tab
-                with gr.Tab("Full Response Generation"):
-                    with gr.Row():
-                        with gr.Column(scale=2):
-                            prompt_input = gr.Textbox(
-                                label="Enter your prompt:",
-                                placeholder="Type your prompt here...",
-                                lines=3
-                            )
-                            
-                            with gr.Row():
-                                max_length = gr.Slider(
-                                    minimum=10, maximum=200, value=50, step=10,
-                                    label="Max Length"
-                                )
-                                temperature = gr.Slider(
-                                    minimum=0.0, maximum=2.0, value=1.0, step=0.1,
-                                    label="Temperature"
-                                )
-                            
-                            with gr.Row():
-                                top_k = gr.Slider(
-                                    minimum=0, maximum=50, value=10, step=1,
-                                    label="Top-K (0 = disabled)"
-                                )
-                                top_p = gr.Slider(
-                                    minimum=0.0, maximum=1.0, value=0.9, step=0.05,
-                                    label="Top-P (0 = disabled)"
-                                )
-                            
-                            generate_btn = gr.Button("Generate Response", variant="primary")
-                        
-                        with gr.Column(scale=3):
-                            response_output = gr.Textbox(
-                                label="Generated Response:",
-                                lines=10,
-                                interactive=False
-                            )
-                
                 # Token-by-Token Generation Tab
                 with gr.Tab("Interactive Token Generation"):
                     with gr.Row():
@@ -375,6 +336,47 @@ class GradioApp:
                                 label="Token Data (JSON):"
                             )
             
+                            # Full Response Generation Tab
+                
+                
+                with gr.Tab("Full Response Generation"):
+                    with gr.Row():
+                        with gr.Column(scale=2):
+                            prompt_input = gr.Textbox(
+                                label="Enter your prompt:",
+                                placeholder="Type your prompt here...",
+                                lines=3
+                            )
+                            
+                            with gr.Row():
+                                max_length = gr.Slider(
+                                    minimum=10, maximum=200, value=50, step=10,
+                                    label="Max Length"
+                                )
+                                temperature = gr.Slider(
+                                    minimum=0.0, maximum=2.0, value=1.0, step=0.1,
+                                    label="Temperature"
+                                )
+                            
+                            with gr.Row():
+                                top_k = gr.Slider(
+                                    minimum=0, maximum=50, value=10, step=1,
+                                    label="Top-K (0 = disabled)"
+                                )
+                                top_p = gr.Slider(
+                                    minimum=0.0, maximum=1.0, value=0.9, step=0.05,
+                                    label="Top-P (0 = disabled)"
+                                )
+                            
+                            generate_btn = gr.Button("Generate Response", variant="primary")
+                        
+                        with gr.Column(scale=3):
+                            response_output = gr.Textbox(
+                                label="Generated Response:",
+                                lines=10,
+                                interactive=False
+                            )
+                
             # Event handlers for full response generation
             generate_btn.click(
                 fn=self.generate_full_response,

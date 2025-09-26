@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from torchmetrics import Perplexity
 from typing import Any, Dict, Optional, Tuple
 import math
 
@@ -60,10 +59,6 @@ class TransformerLightningModule(pl.LightningModule):
         # Loss function
         self.criterion = nn.CrossEntropyLoss(ignore_index=0)  # Ignore padding tokens
         
-        # Metrics
-        self.train_perplexity = Perplexity(ignore_index=0)
-        self.val_perplexity = Perplexity(ignore_index=0)
-        
         # Training parameters
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
@@ -92,8 +87,8 @@ class TransformerLightningModule(pl.LightningModule):
         # Calculate loss
         loss = self.criterion(logits.view(-1, logits.size(-1)), target_ids.view(-1))
         
-        # Calculate perplexity
-        perplexity = self.train_perplexity(logits, target_ids)
+        # Calculate perplexity as exp(loss) to ensure consistency
+        perplexity = torch.exp(loss)
         
         # Log metrics
         self.log('train/loss', loss, on_step=True, on_epoch=True, prog_bar=True)
@@ -120,8 +115,8 @@ class TransformerLightningModule(pl.LightningModule):
         # Calculate loss
         loss = self.criterion(logits.view(-1, logits.size(-1)), target_ids.view(-1))
         
-        # Calculate perplexity
-        perplexity = self.val_perplexity(logits, target_ids)
+        # Calculate perplexity as exp(loss) to ensure consistency
+        perplexity = torch.exp(loss)
         
         # Log metrics
         self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True)
@@ -187,13 +182,11 @@ class TransformerLightningModule(pl.LightningModule):
     
     def on_train_epoch_end(self) -> None:
         """Called at the end of training epoch."""
-        # Reset perplexity metric
-        self.train_perplexity.reset()
+        pass
     
     def on_validation_epoch_end(self) -> None:
         """Called at the end of validation epoch."""
-        # Reset perplexity metric
-        self.val_perplexity.reset()
+        pass
     
     def generate_text(self, 
                      prompt: str,

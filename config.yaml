@@ -3,8 +3,8 @@ hparams:
   d_model: 32 #32
   num_heads: 1 #1
   num_layers: 2 #2
-  d_ff: 1024
-  sequence_length: 64 # 32
+  d_ff: 1024 # 1024
+  sequence_length: 32 # 32
   batch_size: 64 #64
   learning_rate: 0.0001
   max_epochs: 100
@@ -23,7 +23,7 @@ hparams:
   accumulate_grad_batches: 1
   log_every_n_steps: 50
   val_check_interval: 1.0
-  save_top_k: 3
+  save_top_k: 1
   monitor: "val/loss"
   mode: "min"
 
