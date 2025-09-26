@@ -112,7 +112,7 @@ class GradioApp:
             prompt: Initial prompt
             
         Returns:
-            Tuple of (current_text, probability_bars, next_tokens_json)
+            Tuple of (current_text, probability_bars_html, next_tokens_json)
         """
         if not self.generator:
             return "Error: Model not loaded.", "", "[]"
@@ -133,14 +133,13 @@ class GradioApp:
                 top_k=10
             )
             
-            # Create probability bars
-            bars = ProbabilityVisualizer.create_probability_bars(candidates)
-            probability_bars = "\n".join(bars)
+            # Create HTML probability bars
+            probability_bars_html = ProbabilityVisualizer.create_html_probability_bars(candidates)
             
             # Create JSON for next tokens
             next_tokens_json = json.dumps(candidates, indent=2)
             
-            return self.current_text, probability_bars, next_tokens_json
+            return self.current_text, probability_bars_html, next_tokens_json
             
         except Exception as e:
             return f"Error: {e}", "", "[]"
@@ -154,7 +153,7 @@ class GradioApp:
             temperature: Sampling temperature
             
         Returns:
-            Tuple of (probability_bars, next_tokens_json, status)
+            Tuple of (probability_bars_html, next_tokens_json, status)
         """
         if not self.generator or not self.current_sequence:
             return "", "[]", "No active generation session"
@@ -167,16 +166,15 @@ class GradioApp:
                 top_k=10
             )
             
-            # Create probability bars
-            bars = ProbabilityVisualizer.create_probability_bars(candidates)
-            probability_bars = "\n".join(bars)
+            # Create HTML probability bars
+            probability_bars_html = ProbabilityVisualizer.create_html_probability_bars(candidates)
             
             # Create JSON for next tokens
             next_tokens_json = json.dumps(candidates, indent=2)
             
             status = f"Probabilities updated for temperature {temperature:.1f}"
             
-            return probability_bars, next_tokens_json, status
+            return probability_bars_html, next_tokens_json, status
             
         except Exception as e:
             return "", "[]", f"Error: {e}"
@@ -194,7 +192,7 @@ class GradioApp:
             use_probability_sampling: If True, sample based on probabilities; if False, use selected_token_idx
             
         Returns:
-            Tuple of (current_text, probability_bars, next_tokens_json, status)
+            Tuple of (current_text, probability_bars_html, next_tokens_json, status)
         """
         if not self.generator or not self.current_sequence:
             return "Error: No active generation session.", "", "[]", "Error"
@@ -208,19 +206,21 @@ class GradioApp:
             )
             
             # Select token based on method
+            actual_selected_idx = -1  # For highlighting
             if use_probability_sampling or selected_token_idx == 0:
                 # Sample based on probabilities (either explicitly requested or when 0 is selected)
                 import random
                 probabilities = [candidate['probability'] for candidate in candidates]
-                selected_token_idx = random.choices(range(len(candidates)), weights=probabilities)[0]
-                selected_token = candidates[selected_token_idx]
+                actual_selected_idx = random.choices(range(len(candidates)), weights=probabilities)[0]
+                selected_token = candidates[actual_selected_idx]
             else:
                 # Use index-based selection (1-10 map to 0-9 in candidates array)
                 if selected_token_idx < 1 or selected_token_idx > 10:
                     return self.current_text, "", "[]", "Invalid token selection (must be 0-10)"
                 if selected_token_idx - 1 >= len(candidates):
                     return self.current_text, "", "[]", "Invalid token selection"
-                selected_token = candidates[selected_token_idx - 1]
+                actual_selected_idx = selected_token_idx - 1
+                selected_token = candidates[actual_selected_idx]
             
             # Add selected token to sequence
             self.current_sequence = self.generator.add_token_to_sequence(
@@ -238,9 +238,11 @@ class GradioApp:
                 top_k=10
             )
             
-            # Create probability bars
-            bars = ProbabilityVisualizer.create_probability_bars(next_candidates)
-            probability_bars = "\n".join(bars)
+            # Create HTML probability bars WITHOUT highlighting (new list)
+            probability_bars_html = ProbabilityVisualizer.create_html_probability_bars(
+                next_candidates, 
+                selected_idx=-1  # No highlighting for new list
+            )
             
             # Create JSON for next tokens
             next_tokens_json = json.dumps(next_candidates, indent=2)
@@ -250,17 +252,18 @@ class GradioApp:
             else:
                 status = f"Added token: '{selected_token['token_text']}' (prob: {selected_token['probability']:.4f}) [selected position {selected_token_idx}]"
             
-            return self.current_text, probability_bars, next_tokens_json, status
+            return self.current_text, probability_bars_html, next_tokens_json, status
             
         except Exception as e:
             return f"Error: {e}", "", "[]", "Error"
+    
     
     def reset_generation(self) -> Tuple[str, str, str, str]:
         """
         Reset the generation session.
         
         Returns:
-            Tuple of (current_text, probability_bars, next_tokens_json, status)
+            Tuple of (current_text, probability_bars_html, next_tokens_json, status)
         """
         self.current_sequence = []
         self.current_text = ""
@@ -305,7 +308,7 @@ class GradioApp:
                                 )
                                 token_idx = gr.Number(
                                     value=0, minimum=0, maximum=10, step=1,
-                                    label="Select Token (0=disabled, 1-10=token position)"
+                                    label="Select Token (0=disabled, 1-10=from list)"
                                 )
                             
                             with gr.Row():
@@ -323,12 +326,11 @@ class GradioApp:
                                 interactive=False
                             )
                         
-                        with gr.Column(scale=2):
+                        with gr.Column(scale=1):
                             gr.Markdown("### Next Token Probabilities")
-                            probability_display = gr.Textbox(
+                            probability_display = gr.HTML(
                                 label="Probability Bars:",
-                                lines=15,
-                                interactive=False
+                                value="<div style='font-size: 14px;'>No data available. Start generation to see probabilities.</div>"
                             )
                             
                             gr.Markdown("### Raw Token Data")

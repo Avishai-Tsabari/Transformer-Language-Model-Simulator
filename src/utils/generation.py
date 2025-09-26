@@ -250,13 +250,15 @@ class ProbabilityVisualizer:
     
     @staticmethod
     def create_probability_bars(candidates: List[Dict[str, Any]], 
-                              max_width: int = 50) -> List[str]:
+                              max_width: int = 50,
+                              token_width: int = 15) -> List[str]:
         """
-        Create ASCII bar charts for token probabilities.
+        Create ASCII bar charts for token probabilities with aligned bars.
         
         Args:
             candidates: List of token candidates with probabilities
             max_width: Maximum width of bars
+            token_width: Fixed width for token strings
             
         Returns:
             List of strings representing probability bars
@@ -283,19 +285,28 @@ class ProbabilityVisualizer:
             elif token_text == '\t':
                 token_text = '[TAB]'
             
-            # Create formatted line
-            line = f"{i+1:2d}. {token_text:<12} {bar} {candidate['probability']:.4f}"
+            # Truncate long tokens and add ellipsis
+            display_text = token_text
+            if len(token_text) > token_width:
+                display_text = token_text[:token_width-3] + '...'
+            
+            # Create formatted line with aligned bars
+            line = f"{i+1:2d}. {display_text:<{token_width}} {bar} {candidate['probability']:.4f}"
             bars.append(line)
         
         return bars
     
     @staticmethod
-    def create_html_probability_bars(candidates: List[Dict[str, Any]]) -> str:
+    def create_html_probability_bars(candidates: List[Dict[str, Any]], 
+                                   selected_idx: int = -1,
+                                   token_width: int = 15) -> str:
         """
-        Create HTML bar charts for token probabilities.
+        Create HTML bar charts for token probabilities with alignment and highlighting.
         
         Args:
             candidates: List of token candidates with probabilities
+            selected_idx: Index of selected token to highlight (-1 for none)
+            token_width: Fixed width for token strings
             
         Returns:
             HTML string with probability bars
@@ -303,7 +314,29 @@ class ProbabilityVisualizer:
         if not candidates:
             return ""
         
-        html = "<div style='font-family: monospace;'>"
+        html = """
+        <div style='font-size: 14px;'>
+            <style>
+            @keyframes highlight {
+                0% { background-color: #ffeb3b; border: 2px solid #ff9800; }
+                50% { background-color: #fff59d; border: 2px solid #ff9800; }
+                100% { background-color: transparent; border: 2px solid transparent; }
+            }
+            .token-row {
+                margin: 2px 0; 
+                display: flex; 
+                align-items: center;
+                transition: all 0.3s ease;
+            }
+            .highlighted {
+                background-color: #ffeb3b;
+                border: 2px solid #ff9800;
+                border-radius: 4px;
+                padding: 2px;
+                animation: highlight 1.5s ease-out forwards;
+            }
+            </style>
+        """
         
         for i, candidate in enumerate(candidates):
             probability = candidate['probability']
@@ -318,14 +351,23 @@ class ProbabilityVisualizer:
             elif token_text == '\t':
                 token_text = '[TAB]'
             
+            # Create display text with truncation
+            display_text = token_text
+            full_text = token_text
+            if len(token_text) > token_width:
+                display_text = token_text[:token_width-3] + '...'
+            
             # Create bar
             bar_width = int(probability * 200)  # Max width of 200px
             bar_color = f"hsl({120 * probability:.0f}, 70%, 50%)"  # Green gradient
             
+            # Add highlighting class if selected
+            highlight_class = "highlighted" if (i == selected_idx) else ""
+            
             html += f"""
-            <div style='margin: 2px 0; display: flex; align-items: center;'>
+            <div class='token-row {highlight_class}'>
                 <span style='width: 20px; text-align: right; margin-right: 10px;'>{i+1:2d}.</span>
-                <span style='width: 80px; margin-right: 10px;'>{token_text}</span>
+                <span style='width: {token_width * 8}px; margin-right: 10px;' title='{full_text}'>{display_text}</span>
                 <div style='width: 200px; height: 20px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-right: 10px;'>
                     <div style='width: {bar_width}px; height: 100%; background: {bar_color}; transition: width 0.3s ease;'></div>
                 </div>
