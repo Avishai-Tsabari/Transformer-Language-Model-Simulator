@@ -11,7 +11,8 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, Learning
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning import Trainer
 
-from src.data.tokenizer import SimpleTokenizer, load_text_corpus, create_sample_corpus
+from src.data.tokenizer import load_text_corpus
+from src.data.tokenizer_factory import TokenizerFactory, create_sample_corpus
 from src.data.dataset import TextDataModule
 from src.model.lightning_module import TransformerLightningModule
 
@@ -98,7 +99,18 @@ def main():
     text = load_text_corpus(corpus_path)
     
     # Create tokenizer and build vocabulary
-    tokenizer = SimpleTokenizer(vocab_size=vocab_size)
+    tokenizer_config = config.get("tokenizer", {})
+    tokenizer_type = tokenizer_config.get("type", "word")
+    
+    if tokenizer_type == "word":
+        tokenizer = TokenizerFactory.create_tokenizer("word", vocab_size=vocab_size)
+    elif tokenizer_type == "bpe":
+        bpe_options = tokenizer_config.get("bpe_options", {})
+        tokenizer = TokenizerFactory.create_tokenizer("bpe", vocab_size=vocab_size, **bpe_options)
+    else:
+        raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
+    
+    print(f"Using {tokenizer_type} tokenizer...")
     tokenizer.build_vocab(text)
     
     # Save vocabulary

@@ -1,18 +1,18 @@
 hparams:
-  vocab_size: 3000  # Increased for word-level tokenization
-  d_model: 32 #32
+  vocab_size: 1500  # Vocabulary size for both word-level and BPE tokenization
+  d_model: 8 #32
   num_heads: 1 #1
   num_layers: 2 #2
-  d_ff: 1024 # 1024
+  d_ff: 32 # 1024 - perferable 4X the d_model
   sequence_length: 32 # 32
-  batch_size: 64 #64
-  learning_rate: 0.0001
+  batch_size: 32 #64
+  learning_rate: 0.0001 # 0.0001
   max_epochs: 100
   patience: 10
   min_delta: 0.001
   warmup_steps: 1000
   weight_decay: 0.01
-  dropout: 0.1
+  dropout: 0.2
   train_split: 0.7  # Adjusted to give more data to validation
   val_split: 0.2   # Increased validation split
   num_workers: 0
@@ -26,6 +26,17 @@ hparams:
   save_top_k: 1
   monitor: "val/loss"
   mode: "min"
+
+# Tokenizer configuration
+tokenizer:
+  type: "word"  # Options: "word" or "bpe"
+  # Word tokenizer options (used when type="word")
+  word_options: {}
+  
+  # BPE tokenizer options (used when type="bpe")
+  bpe_options:
+    min_frequency: 2      # Minimum frequency for a merge to be considered
+    special_tokens: ["<PAD>", "<UNK>", "<SOS>", "<EOS>"]
 
 paths:
   corpus_path: "sample_corpus.txt"

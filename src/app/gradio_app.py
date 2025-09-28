@@ -5,6 +5,7 @@ import gradio as gr
 import torch
 import os
 import sys
+import pickle
 from typing import List, Dict, Any, Tuple
 import json
 
@@ -12,6 +13,7 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from src.data.tokenizer import SimpleTokenizer
+from src.data.simple_bpe_tokenizer import SimpleBPETokenizer
 from src.model.lightning_module import TransformerLightningModule
 from src.utils.generation import TextGenerator, ProbabilityVisualizer
 
@@ -39,6 +41,34 @@ class GradioApp:
         if model_path and vocab_path:
             self.load_model(model_path, vocab_path)
     
+    def _detect_tokenizer_type(self, vocab_path: str) -> str:
+        """
+        Detect tokenizer type by examining the vocabulary file.
+        
+        Args:
+            vocab_path: Path to vocabulary file
+            
+        Returns:
+            Tokenizer type ("word" or "bpe")
+        """
+        try:
+            with open(vocab_path, 'rb') as f:
+                vocab_data = pickle.load(f)
+            
+            # Check if it's a BPE tokenizer (has tokenizer_path key)
+            if 'tokenizer_path' in vocab_data:
+                return "bpe"
+            # Check if it's a word tokenizer (has word_to_idx key)
+            elif 'word_to_idx' in vocab_data:
+                return "word"
+            else:
+                # Default to BPE if we can't determine
+                print("Warning: Could not determine tokenizer type, defaulting to BPE")
+                return "bpe"
+        except Exception as e:
+            print(f"Warning: Error detecting tokenizer type: {e}, defaulting to BPE")
+            return "bpe"
+    
     def load_model(self, model_path: str, vocab_path: str):
         """
         Load trained model and tokenizer.
@@ -48,8 +78,15 @@ class GradioApp:
             vocab_path: Path to vocabulary file
         """
         try:
-            # Load tokenizer
-            self.tokenizer = SimpleTokenizer()
+            # Detect tokenizer type by examining vocab file
+            tokenizer_type = self._detect_tokenizer_type(vocab_path)
+            
+            # Load appropriate tokenizer
+            if tokenizer_type == "bpe":
+                self.tokenizer = SimpleBPETokenizer()
+            else:
+                self.tokenizer = SimpleTokenizer()
+            
             self.tokenizer.load_vocab(vocab_path)
             
             # Load model
@@ -122,7 +159,15 @@ class GradioApp:
             if prompt:
                 self.current_sequence = self.tokenizer.encode(prompt, add_special_tokens=True)
             else:
-                self.current_sequence = [self.tokenizer.char_to_idx[self.tokenizer.SOS_TOKEN]]
+                # Get SOS token - handle both tokenizer types
+                if hasattr(self.tokenizer, 'get_special_tokens'):
+                    # BPE tokenizer
+                    special_tokens = self.tokenizer.get_special_tokens()
+                    sos_token_id = special_tokens.get('SOS', 2)  # Default to 2 if not found
+                else:
+                    # Word tokenizer
+                    sos_token_id = self.tokenizer.word_to_idx[self.tokenizer.SOS_TOKEN]
+                self.current_sequence = [sos_token_id]
             
             self.current_text = self.tokenizer.decode(self.current_sequence, skip_special_tokens=True)
             

@@ -1,6 +1,6 @@
 # Small LLM with Transformer Architecture
 
-A complete implementation of a small language model using PyTorch Lightning with training, inference, and interactive web interface.
+A complete implementation of a small language model using PyTorch Lightning with training, inference, and interactive web interface. This project demonstrates how to build, train, and deploy a transformer-based language model from scratch.
 
 ## Features
 
@@ -10,6 +10,8 @@ A complete implementation of a small language model using PyTorch Lightning with
   - Full response generation
   - Token-by-token prediction with probability visualization
 - **Real-time Controls**: Interactive temperature adjustment with immediate probability updates
+- **Configuration Management**: YAML-based configuration for easy hyperparameter tuning
+- **Demo Script**: Complete testing suite to verify all components work correctly
 
 ## Project Structure
 
@@ -30,38 +32,159 @@ A complete implementation of a small language model using PyTorch Lightning with
 │       ├── __init__.py
 │       └── gradio_app.py       # Gradio interface
 ├── train.py                    # Training script
+├── demo.py                     # Demo script to test components
+├── config.yaml                 # Configuration file
 ├── sample_corpus.txt           # Example training data
-└── requirements.txt
+├── requirements.txt            # Python dependencies
+└── train_notebook.ipynb        # Jupyter notebook for experimentation
 ```
 
 ## Installation
 
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd demo_llm
+```
+
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
+3. (Optional) Test the installation:
+```bash
+python demo.py
+```
+
 ## Usage
+
+### Quick Start
+
+1. **Test the components** (recommended first step):
+```bash
+python demo.py
+```
+
+2. **Train a model**:
+```bash
+python train.py --create_sample
+```
+
+3. **Run the interactive app**:
+```bash
+python -m src.app.gradio_app
+```
 
 ### Training
 
-1. Prepare your text corpus in `sample_corpus.txt`
-2. Run training:
+The training script supports several options:
+
 ```bash
+# Train with default configuration
 python train.py
+
+# Train with custom corpus
+python train.py --corpus_path your_corpus.txt
+
+# Train with custom config file
+python train.py --config custom_config.yaml
+
+# Create sample corpus if it doesn't exist
+python train.py --create_sample
 ```
 
-3. Monitor training with TensorBoard:
+**Monitor training progress:**
 ```bash
 tensorboard --logdir=./logs
 ```
 
 ### Inference
 
-Run the Gradio app:
+**Run the Gradio app:**
 ```bash
+# With default model (if available)
 python -m src.app.gradio_app
+
+# With specific trained model
+python -m src.app.gradio_app --model_path ./checkpoints/transformer_lm-best-v01.ckpt --vocab_path ./checkpoints/vocab.pkl
 ```
 
-## Configuration
+The Gradio app provides:
+- **Full Response Generation**: Generate complete text responses
+- **Token-by-Token Prediction**: See next token probabilities in real-time
+- **Interactive Controls**: Adjust temperature and other parameters
+- **Probability Visualization**: Visual bars showing token probabilities
 
-Modify hyperparameters in `train.py` or create a config file for different model sizes and training settings.
+### Configuration
+
+The project uses `config.yaml` for all hyperparameters and settings:
+
+```yaml
+hparams:
+  vocab_size: 3000
+  d_model: 32
+  num_heads: 1
+  num_layers: 2
+  sequence_length: 32
+  batch_size: 64
+  learning_rate: 0.0001
+  max_epochs: 100
+  # ... more parameters
+
+paths:
+  corpus_path: "sample_corpus.txt"
+  save_dir: "./checkpoints"
+  log_dir: "./logs"
+```
+
+**Key configuration options:**
+- **Model Architecture**: `d_model`, `num_heads`, `num_layers`, `d_ff`
+- **Training**: `learning_rate`, `max_epochs`, `batch_size`, `sequence_length`
+- **Data**: `vocab_size`, `train_split`, `val_split`
+- **Paths**: `corpus_path`, `save_dir`, `log_dir`
+
+### Demo Script
+
+The `demo.py` script tests all components:
+
+```bash
+python demo.py
+```
+
+This will:
+- Test tokenizer functionality
+- Test dataset creation
+- Test transformer model
+- Test PyTorch Lightning integration
+- Test text generation
+- Provide next steps for training and deployment
+
+## What This Project Demonstrates
+
+This project is a complete educational implementation of a small language model that shows:
+
+- **Transformer Architecture**: How to build a transformer from scratch with attention mechanisms
+- **Language Modeling**: Next-token prediction and text generation
+- **PyTorch Lightning**: Modern training framework with callbacks, logging, and checkpointing
+- **Text Processing**: Tokenization, vocabulary building, and dataset creation
+- **Interactive Deployment**: Gradio-based web interface for model interaction
+- **Configuration Management**: YAML-based hyperparameter management
+- **Best Practices**: Proper project structure, testing, and documentation
+
+## Expected Results
+
+With the default configuration, you can expect:
+- **Model Size**: ~100K parameters (very small, fast training)
+- **Training Time**: 5-15 minutes on CPU, 1-3 minutes on GPU
+- **Text Quality**: Coherent short phrases and sentences (limited by small model size)
+- **Use Cases**: Educational purposes, understanding transformer internals, text generation experiments
+
+## Next Steps
+
+After running the demo and training:
+1. Experiment with different hyperparameters in `config.yaml`
+2. Try different text corpora for domain-specific training
+3. Increase model size for better text quality
+4. Explore the Jupyter notebook for interactive experimentation
+5. Modify the transformer architecture for your specific needs
