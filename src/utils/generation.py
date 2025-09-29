@@ -33,7 +33,8 @@ class TextGenerator:
                              temperature: float = 1.0,
                              top_k: Optional[int] = None,
                              top_p: Optional[float] = None,
-                             repetition_penalty: float = 1.0) -> str:
+                             repetition_penalty: float = 1.0,
+                             filter_unk: bool = True) -> str:
         """
         Generate a complete response from a prompt.
         
@@ -44,6 +45,7 @@ class TextGenerator:
             top_k: Top-k sampling
             top_p: Top-p (nucleus) sampling
             repetition_penalty: Penalty for repeated tokens
+            filter_unk: Whether to filter out UNK tokens
             
         Returns:
             Generated text
@@ -58,7 +60,8 @@ class TextGenerator:
             temperature=temperature,
             top_k=top_k,
             top_p=top_p,
-            repetition_penalty=repetition_penalty
+            repetition_penalty=repetition_penalty,
+            filter_unk=filter_unk
         )
         
         # Decode generated text
@@ -69,7 +72,8 @@ class TextGenerator:
     def get_next_token_candidates(self,
                                 input_ids: List[int],
                                 temperature: float = 1.0,
-                                top_k: int = 10) -> List[Dict[str, Any]]:
+                                top_k: int = 10,
+                                filter_unk: bool = True) -> List[Dict[str, Any]]:
         """
         Get top-k candidates for next token with probabilities.
         
@@ -77,6 +81,7 @@ class TextGenerator:
             input_ids: Current input token sequence
             temperature: Sampling temperature
             top_k: Number of top candidates to return
+            filter_unk: Whether to filter out UNK tokens
             
         Returns:
             List of dictionaries with token info and probabilities
@@ -86,6 +91,12 @@ class TextGenerator:
         with torch.no_grad():
             # Get logits for next token
             logits = self.model(input_tensor)
+            
+            # Filter out UNK tokens if requested
+            if filter_unk and hasattr(self.tokenizer, 'UNK_TOKEN'):
+                unk_id = getattr(self.tokenizer, 'unk_token_id', None)
+                if unk_id is not None:
+                    logits[:, :, unk_id] = -float('inf')
             
             # Handle temperature = 0 (deterministic selection)
             if temperature == 0.0:
@@ -122,7 +133,8 @@ class TextGenerator:
                           temperature: float,
                           top_k: Optional[int],
                           top_p: Optional[float],
-                          repetition_penalty: float) -> torch.Tensor:
+                          repetition_penalty: float,
+                          filter_unk: bool = True) -> torch.Tensor:
         """
         Generate a sequence of tokens.
         
@@ -133,6 +145,7 @@ class TextGenerator:
             top_k: Top-k sampling
             top_p: Top-p sampling
             repetition_penalty: Penalty for repeated tokens
+            filter_unk: Whether to filter out UNK tokens
             
         Returns:
             Generated token sequence
@@ -142,6 +155,12 @@ class TextGenerator:
         for _ in range(max_length - input_tensor.size(1)):
             # Get logits for next token
             logits = self.model(generated)
+            
+            # Filter out UNK tokens if requested
+            if filter_unk and hasattr(self.tokenizer, 'UNK_TOKEN'):
+                unk_id = getattr(self.tokenizer, 'unk_token_id', None)
+                if unk_id is not None:
+                    logits[:, :, unk_id] = -float('inf')
             
             # Handle temperature = 0 (deterministic selection)
             if temperature == 0.0:

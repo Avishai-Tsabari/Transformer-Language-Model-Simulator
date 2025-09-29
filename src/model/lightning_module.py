@@ -80,6 +80,10 @@ class TransformerLightningModule(pl.LightningModule):
             Training loss
         """
         input_ids, target_ids = batch
+
+        # # check which device the tensors are on
+        # print(f"Input tensor device: {input_ids.device}")
+        # print(f"Target tensor device: {target_ids.device}")
         
         # Forward pass
         logits = self(input_ids)

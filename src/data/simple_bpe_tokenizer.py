@@ -41,6 +41,9 @@ class SimpleBPETokenizer:
             special_tokens = ['<PAD>', '<UNK>', '<SOS>', '<EOS>']
         self.special_tokens = special_tokens
         
+        # Token IDs for easy access
+        self.unk_token_id = None  # Will be set after vocab is built
+        
         # Initialize tokenizer
         self.tokenizer = None
         self.vocab_built = False
@@ -84,6 +87,10 @@ class SimpleBPETokenizer:
                 ("<EOS>", self.tokenizer.get_vocab()["<EOS>"])
             ]
         )
+        
+        # Set UNK token ID
+        vocab = self.tokenizer.get_vocab()
+        self.unk_token_id = vocab.get('<UNK>', None)
         
         self.vocab_built = True
         print(f"BPE vocabulary built with {self.tokenizer.get_vocab_size()} tokens")
@@ -150,8 +157,15 @@ class SimpleBPETokenizer:
         # Decode
         decoded = self.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
         
-        # Clean up extra spaces
+        # Clean up spacing around punctuation
         import re
+        # Remove spaces before punctuation
+        decoded = re.sub(r'\s+([.,!?;:])', r'\1', decoded)
+        # Remove spaces after opening punctuation
+        decoded = re.sub(r'([\'"\(])\s+', r'\1', decoded)
+        # Remove spaces before closing punctuation
+        decoded = re.sub(r'\s+([\'"\)])', r'\1', decoded)
+        # Clean up multiple spaces
         decoded = re.sub(r'\s+', ' ', decoded).strip()
         
         return decoded

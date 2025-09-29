@@ -25,6 +25,9 @@ class SimpleTokenizer:
         self.SOS_TOKEN = '<SOS>'
         self.EOS_TOKEN = '<EOS>'
         
+        # Token IDs for easy access
+        self.unk_token_id = 1  # Will be set after vocab is built
+        
     def build_vocab(self, text: str) -> None:
         """
         Build vocabulary from text corpus.
