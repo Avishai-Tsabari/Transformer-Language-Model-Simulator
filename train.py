@@ -7,6 +7,7 @@ import torch
 import pytorch_lightning as pl
 import yaml
 import shutil
+import pickle
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning import Trainer
@@ -250,17 +251,39 @@ def main():
         final_model_path = os.path.join(save_dir, f"{experiment_name}-best-v{version:02d}.ckpt")
         shutil.copy2(checkpoint_callback.best_model_path, final_model_path)
         print(f"Best model copied to {final_model_path}")
+        
+        # Also save as the standard final model name (overwrites previous)
+        standard_final_path = os.path.join(save_dir, f"{experiment_name}_final.ckpt")
+        shutil.copy2(checkpoint_callback.best_model_path, standard_final_path)
+        print(f"Best model also saved as {standard_final_path}")
     else:
         print("No best model found, saving current model as final")
         version = trainer.logger.version
         final_model_path = os.path.join(save_dir, f"{experiment_name}-final-v{version:02d}.ckpt")
         trainer.save_checkpoint(final_model_path)
         print(f"Final model saved to {final_model_path}")
+        
+        # Also save as the standard final model name (overwrites previous)
+        standard_final_path = os.path.join(save_dir, f"{experiment_name}_final.ckpt")
+        shutil.copy2(final_model_path, standard_final_path)
+        print(f"Final model also saved as {standard_final_path}")
+    
+    # Also save the vocab with the version number (matching notebook behavior)
+    versioned_vocab_path = os.path.join(save_dir, f"vocab-v{version:02d}.pkl")
+    with open(versioned_vocab_path, 'wb') as f:
+        pickle.dump(tokenizer.vocab, f)
+        print(f"Vocab saved to {versioned_vocab_path}")
+    
+    # Also save as the standard vocab name (overwrites previous)
+    standard_vocab_path = os.path.join(save_dir, "vocab.pkl")
+    with open(standard_vocab_path, 'wb') as f:
+        pickle.dump(tokenizer.vocab, f)
+        print(f"Vocab also saved as {standard_vocab_path}")
     
     print("\nTraining completed!")
     print(f"Checkpoints saved in: {save_dir}")
     print(f"Logs saved in: {log_dir}")
-    print(f"Vocabulary saved in: {vocab_path}")
+    print(f"Vocabulary saved in: {standard_vocab_path}")
     print(f"Best model: {checkpoint_callback.best_model_path}")
     print(f"Best score: {checkpoint_callback.best_model_score}")
     print(f"Final model saved as: {final_model_path}")
@@ -268,7 +291,7 @@ def main():
     # Print instructions for running the app
     print("\n" + "="*50)
     print("To run the Gradio app with your trained model:")
-    print(f"python -m src.app.gradio_app --model_path {final_model_path} --vocab_path {vocab_path}")
+    print(f"python -m src.app.gradio_app --model_path {standard_final_path} --vocab_path {standard_vocab_path}")
     print("="*50)
 
 
