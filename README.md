@@ -121,8 +121,10 @@ tensorboard --logdir=./logs
 # With default model (if available)
 python -m src.app.gradio_app
 
-# With specific trained model
-python -m src.app.gradio_app --model_path ./checkpoints/transformer_lm-best-v01.ckpt --vocab_path ./checkpoints/vocab.pkl
+# With the last trained model
+python -m src.app.gradio_app --model_path ./checkpoints/transformer_lm-final.ckpt --vocab_path ./checkpoints/vocab.pkl
+# Or with specific trained model
+python -m src.app.gradio_app --model_path ./checkpoints/transformer_lm-best-v01.ckpt --vocab_path ./checkpoints/vocab-v01.pkl
 ```
 
 The Gradio app provides:
