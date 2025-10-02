@@ -24,6 +24,8 @@ class SimpleTokenizer:
         self.UNK_TOKEN = '<UNK>'
         self.SOS_TOKEN = '<SOS>'
         self.EOS_TOKEN = '<EOS>'
+        self.LINE_BREAK_TOKEN = '<LINE_BREAK>'
+        self.SONG_BREAK_TOKEN = '<SONG_BREAK>'
         
         # Token IDs for easy access
         self.unk_token_id = 1  # Will be set after vocab is built
@@ -44,20 +46,30 @@ class SimpleTokenizer:
         # Count word frequencies
         word_counts = Counter(words)
         
+        # Remove special tokens from word counts (they will be added separately)
+        for token in [self.LINE_BREAK_TOKEN[1:-1], self.SONG_BREAK_TOKEN[1:-1]]:
+            word_counts.pop(token, None)
+        
         # Get most frequent words
-        most_common_words = word_counts.most_common(self.vocab_size - 4)  # Reserve space for special tokens
+        most_common_words = word_counts.most_common(self.vocab_size - 6)  # Reserve space for special tokens
         
         # Build vocabulary
         self.word_to_idx = {
             self.PAD_TOKEN: 0,
             self.UNK_TOKEN: 1,
             self.SOS_TOKEN: 2,
-            self.EOS_TOKEN: 3
+            self.EOS_TOKEN: 3,
+            self.LINE_BREAK_TOKEN: 4,
+            self.SONG_BREAK_TOKEN: 5
         }
         
         # Add most common words
         for i, (word, _) in enumerate(most_common_words):
-            self.word_to_idx[word] = i + 4
+            self.word_to_idx[word] = i + 6
+            
+        # Add special tokens back to vocabulary with correct IDs
+        self.word_to_idx[self.LINE_BREAK_TOKEN[1:-1]] = 4  # LINE_BREAK
+        self.word_to_idx[self.SONG_BREAK_TOKEN[1:-1]] = 5  # SONG_BREAK
             
         # Create reverse mapping
         self.idx_to_word = {idx: word for word, idx in self.word_to_idx.items()}
@@ -70,10 +82,16 @@ class SimpleTokenizer:
         # Convert to lowercase
         text = text.lower()
         
-        # Remove extra whitespace
+        # Handle line breaks: replace multiple newlines with song break token, single newlines with line break token
+        # First, replace multiple consecutive newlines with song break token
+        text = re.sub(r'\n\s*\n+', f' {self.SONG_BREAK_TOKEN[1:-1]} ', text)
+        # Then replace remaining single newlines with line break token
+        text = re.sub(r'\n', f' {self.LINE_BREAK_TOKEN[1:-1]} ', text)
+        
+        # Remove extra whitespace but preserve single spaces
         text = re.sub(r'\s+', ' ', text)
         
-        # Remove special characters except basic punctuation
+        # Remove special characters except basic punctuation and our special tokens
         text = re.sub(r'[^\w\s.,!?;:\'"()-]', '', text)
         
         return text.strip()
@@ -128,11 +146,30 @@ class SimpleTokenizer:
         for token_id in token_ids:
             if token_id in self.idx_to_word:
                 word = self.idx_to_word[token_id]
-                if skip_special_tokens and word in [self.PAD_TOKEN, self.UNK_TOKEN, self.SOS_TOKEN, self.EOS_TOKEN]:
+                if word == self.LINE_BREAK_TOKEN[1:-1]:  # Remove angle brackets
+                    words.append('\n')
+                elif word == self.SONG_BREAK_TOKEN[1:-1]:  # Remove angle brackets
+                    words.append('\n\n')
+                elif skip_special_tokens and word in [self.PAD_TOKEN, self.UNK_TOKEN, self.SOS_TOKEN, self.EOS_TOKEN]:
                     continue
-                words.append(word)
+                else:
+                    words.append(word)
+            else:
+                # Handle unknown tokens
+                if not skip_special_tokens:
+                    words.append('<UNK>')
                 
-        return " ".join(words)
+        # Join words and handle line breaks properly
+        result = ""
+        for i, word in enumerate(words):
+            if word == '\n' or word == '\n\n':
+                result += word
+            else:
+                if i > 0 and words[i-1] not in ['\n', '\n\n']:
+                    result += " "
+                result += word
+                
+        return result
     
     def save_vocab(self, filepath: str) -> None:
         """Save vocabulary to file."""
@@ -166,7 +203,9 @@ class SimpleTokenizer:
             'PAD': self.word_to_idx[self.PAD_TOKEN],
             'UNK': self.word_to_idx[self.UNK_TOKEN],
             'SOS': self.word_to_idx[self.SOS_TOKEN],
-            'EOS': self.word_to_idx[self.EOS_TOKEN]
+            'EOS': self.word_to_idx[self.EOS_TOKEN],
+            'LINE_BREAK': self.word_to_idx[self.LINE_BREAK_TOKEN],
+            'SONG_BREAK': self.word_to_idx[self.SONG_BREAK_TOKEN]
         }
 
 

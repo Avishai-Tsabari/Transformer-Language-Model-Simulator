@@ -38,7 +38,7 @@ class SimpleBPETokenizer:
         
         # Special tokens
         if special_tokens is None:
-            special_tokens = ['<PAD>', '<UNK>', '<SOS>', '<EOS>']
+            special_tokens = ['<PAD>', '<UNK>', '<SOS>', '<EOS>', '<LINE_BREAK>', '<SONG_BREAK>']
         self.special_tokens = special_tokens
         
         # Token IDs for easy access
@@ -101,10 +101,16 @@ class SimpleBPETokenizer:
         # Convert to lowercase
         text = text.lower()
         
-        # Remove extra whitespace
+        # Handle line breaks: replace multiple newlines with song break token, single newlines with line break token
+        # First, replace multiple consecutive newlines with song break token
+        text = re.sub(r'\n\s*\n+', ' <SONG_BREAK> ', text)
+        # Then replace remaining single newlines with line break token
+        text = re.sub(r'\n', ' <LINE_BREAK> ', text)
+        
+        # Remove extra whitespace but preserve single spaces
         text = re.sub(r'\s+', ' ', text)
         
-        # Remove special characters except basic punctuation
+        # Remove special characters except basic punctuation and our special tokens
         text = re.sub(r'[^\w\s.,!?;:\'"()-]', '', text)
         
         return text.strip()
@@ -157,8 +163,13 @@ class SimpleBPETokenizer:
         # Decode
         decoded = self.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
         
-        # Clean up spacing around punctuation
+        # Handle line break tokens
         import re
+        # Replace line break tokens with actual line breaks
+        decoded = re.sub(r'LINE_BREAK', '\n', decoded)
+        decoded = re.sub(r'SONG_BREAK', '\n\n', decoded)
+        
+        # Clean up spacing around punctuation
         # Remove spaces before punctuation
         decoded = re.sub(r'\s+([.,!?;:])', r'\1', decoded)
         # Remove spaces after opening punctuation
