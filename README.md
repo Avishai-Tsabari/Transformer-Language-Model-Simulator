@@ -34,7 +34,7 @@ A complete implementation of a small language model using PyTorch Lightning with
 ├── train.py                    # Training script
 ├── demo.py                     # Demo script to test components
 ├── config.yaml                 # Configuration file
-├── sample_corpus.txt           # Example training data
+├── sample_corpus.txt           # Training data (user-provided)
 ├── requirements.txt            # Python dependencies
 └── train_notebook.ipynb        # Jupyter notebook for experimentation
 ```
@@ -52,7 +52,12 @@ cd demo_llm
 pip install -r requirements.txt
 ```
 
-3. (Optional) Test the installation:
+3. **Prepare your training data:**
+   - Create a text file named `sample_corpus.txt` in the root directory
+   - Add your training text data to this file (one sentence per line recommended)
+   - The file should contain the text you want your model to learn from
+
+4. (Optional) Test the installation:
 ```bash
 python demo.py
 ```
@@ -68,12 +73,28 @@ python demo.py
 
 2. **Train a model**:
 ```bash
-python train.py --create_sample
+python train.py
 ```
 
 3. **Run the interactive app**:
 ```bash
 python -m src.app.gradio_app
+```
+
+### Data Preparation
+
+Before training, you need to prepare your training data:
+
+1. **Create `sample_corpus.txt`** in the root directory
+2. **Add your text data** - one sentence per line is recommended
+3. **Ensure sufficient data** - at least a few thousand lines for meaningful training
+
+**Example `sample_corpus.txt`:**
+```
+This is the first sentence of your training data.
+This is the second sentence.
+Your model will learn from this text.
+Add more sentences to improve training.
 ```
 
 ### Training
@@ -89,9 +110,6 @@ python train.py --corpus_path your_corpus.txt
 
 # Train with custom config file
 python train.py --config custom_config.yaml
-
-# Create sample corpus if it doesn't exist
-python train.py --create_sample
 ```
 
 **Monitor training progress:**

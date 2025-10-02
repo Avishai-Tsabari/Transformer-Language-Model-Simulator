@@ -13,9 +13,10 @@ checkpoints
 # datasets folder
 datasets
 
-# scraping folder
+# scraping folder and related files
 scraping
 scrape_lyrics.py
+prepare_corpus.py
 
 # PROJECT_STRUCTURE.md, # README_SCRAPING.md, # USAGE_GUIDE.md
 PROJECT_STRUCTURE.md
