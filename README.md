@@ -54,7 +54,7 @@ pip install -r requirements.txt
 
 3. **Prepare your training data:**
    - Create a text file named `sample_corpus.txt` in the root directory
-   - Add your training text data to this file (one sentence per line recommended)
+   - Add your training text data to this file
    - The file should contain the text you want your model to learn from
 
 4. (Optional) Test the installation:
@@ -86,15 +86,12 @@ python -m src.app.gradio_app
 Before training, you need to prepare your training data:
 
 1. **Create `sample_corpus.txt`** in the root directory
-2. **Add your text data** - one sentence per line is recommended
-3. **Ensure sufficient data** - at least a few thousand lines for meaningful training
+2. **Add your text data** - any format works (paragraphs, sentences, etc.)
+3. **Ensure sufficient data** - at least a few thousand words for meaningful training
 
 **Example `sample_corpus.txt`:**
 ```
-This is the first sentence of your training data.
-This is the second sentence.
-Your model will learn from this text.
-Add more sentences to improve training.
+This is a paragraph of your training data. The model will learn from this text by processing it as a continuous sequence of words. You can add multiple paragraphs, stories, or any text format you want. The model uses a sliding window approach, so it will learn patterns from overlapping sequences of words.
 ```
 
 ### Training
