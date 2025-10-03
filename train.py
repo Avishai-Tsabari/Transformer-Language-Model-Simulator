@@ -12,8 +12,8 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, Learning
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning import Trainer
 
-from src.data.tokenizer import load_text_corpus
-from src.data.tokenizer_factory import TokenizerFactory, create_sample_corpus
+from src.data.tokenizer import load_text_corpus, create_sample_corpus
+from src.data.tokenizer_factory import TokenizerFactory
 from src.data.dataset import TextDataModule
 from src.model.lightning_module import TransformerLightningModule
 
@@ -55,6 +55,7 @@ def main():
     num_layers = hparams["num_layers"]
     d_ff = hparams["d_ff"]
     sequence_length = hparams["sequence_length"]
+    stride = hparams["stride"]
     batch_size = hparams["batch_size"]
     learning_rate = hparams["learning_rate"]
     max_epochs = hparams["max_epochs"]
@@ -85,9 +86,12 @@ def main():
     create_sample = general["create_sample"] or args.create_sample
     
     # Create sample corpus if requested and doesn't exist
-    if create_sample and not os.path.exists(corpus_path):
-        print(f"Creating sample corpus at {corpus_path}")
-        create_sample_corpus(corpus_path)
+    if create_sample:
+        if not os.path.exists(corpus_path):
+            print(f"Creating sample corpus at {corpus_path}")
+            create_sample_corpus(corpus_path)
+        else:
+            print(f"Sample corpus already exists at {corpus_path}, using existing file")
     
     # Check if corpus exists
     if not os.path.exists(corpus_path):
@@ -118,7 +122,6 @@ def main():
     vocab_path = os.path.join(save_dir, "vocab.pkl")
     os.makedirs(save_dir, exist_ok=True)
     tokenizer.save_vocab(vocab_path)
-    print(f"Vocabulary saved to {vocab_path}")
     
     # Encode text
     token_ids = tokenizer.encode(text)
@@ -128,6 +131,7 @@ def main():
     data_module = TextDataModule(
         token_ids=token_ids,
         sequence_length=sequence_length,
+        stride=stride,
         batch_size=batch_size,
         train_split=train_split,
         val_split=val_split,
@@ -223,16 +227,36 @@ def main():
     print(f"Val tokens: {val_end - train_end}")
     print(f"Test tokens: {total_len - val_end}")
     
-    # Check if validation data is sufficient
+    # Check if validation data is sufficient and adjust sequence length if needed
     val_tokens = val_end - train_end
+    original_sequence_length = sequence_length
+    
     if val_tokens < sequence_length:
-        print(f"WARNING: Validation data has only {val_tokens} tokens, less than sequence length {sequence_length}")
-        print("This will cause validation to fail. Consider using a larger corpus or adjusting splits.")
+        # Calculate the maximum possible sequence length that allows for at least one validation batch
+        max_val_sequence_length = max(1, val_tokens - 1)  # Leave at least 1 token for overlap
+        max_train_sequence_length = max(1, train_end - 1)  # Leave at least 1 token for overlap
+        max_sequence_length = min(max_val_sequence_length, max_train_sequence_length)
+        
+        if max_sequence_length < sequence_length:
+            print(f"WARNING: Validation data has only {val_tokens} tokens, less than sequence length {sequence_length}")
+            print(f"Automatically adjusting sequence length from {sequence_length} to {max_sequence_length}")
+            print("This ensures both training and validation can create at least one batch.")
+            
+            # Update sequence length in the data module
+            sequence_length = max_sequence_length
+            data_module.sequence_length = sequence_length
+            data_module.setup()  # Recreate datasets with new sequence length
+            
+            # Update the model's sequence length if it has one
+            if hasattr(model, 'sequence_length'):
+                model.sequence_length = sequence_length
     
     # Train model
     print("\nStarting training...")
     print("With the updated parameters:")
     print(f"- Sequence length: {sequence_length}")
+    if original_sequence_length != sequence_length:
+        print(f"  (Originally: {original_sequence_length}, adjusted for data size)")
     print(f"- Train split: {train_split}")
     print(f"- Val split: {val_split}")
     print(f"- Monitor: {monitor}")
@@ -253,7 +277,7 @@ def main():
         print(f"Best model copied to {final_model_path}")
         
         # Also save as the standard final model name (overwrites previous)
-        standard_final_path = os.path.join(save_dir, f"{experiment_name}_final.ckpt")
+        standard_final_path = os.path.join(save_dir, f"{experiment_name}-final.ckpt")
         shutil.copy2(checkpoint_callback.best_model_path, standard_final_path)
         print(f"Best model also saved as {standard_final_path}")
     else:
@@ -264,20 +288,25 @@ def main():
         print(f"Final model saved to {final_model_path}")
         
         # Also save as the standard final model name (overwrites previous)
-        standard_final_path = os.path.join(save_dir, f"{experiment_name}_final.ckpt")
+        standard_final_path = os.path.join(save_dir, f"{experiment_name}-final.ckpt")
         shutil.copy2(final_model_path, standard_final_path)
         print(f"Final model also saved as {standard_final_path}")
     
     # Also save the vocab with the version number (matching notebook behavior)
     versioned_vocab_path = os.path.join(save_dir, f"vocab-v{version:02d}.pkl")
+    vocab_data = {
+        'word_to_idx': tokenizer.word_to_idx,
+        'idx_to_word': tokenizer.idx_to_word,
+        'vocab_size': tokenizer.vocab_size
+    }
     with open(versioned_vocab_path, 'wb') as f:
-        pickle.dump(tokenizer.vocab, f)
+        pickle.dump(vocab_data, f)
         print(f"Vocab saved to {versioned_vocab_path}")
     
     # Also save as the standard vocab name (overwrites previous)
     standard_vocab_path = os.path.join(save_dir, "vocab.pkl")
     with open(standard_vocab_path, 'wb') as f:
-        pickle.dump(tokenizer.vocab, f)
+        pickle.dump(vocab_data, f)
         print(f"Vocab also saved as {standard_vocab_path}")
     
     print("\nTraining completed!")

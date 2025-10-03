@@ -1,11 +1,12 @@
 hparams:
   vocab_size: 8000  # Maximal allowed vocabulary size for both word-level and BPE tokenization. Everything above will be truncated.
-  d_model: 8 #32
-  num_heads: 1 #1
-  num_layers: 2 #2
-  d_ff: 32 # 1024 - perferable 4X d_model
-  sequence_length: 64 # 32
-  batch_size: 32 #64
+  d_model: 8
+  num_heads: 1
+  num_layers: 2
+  d_ff: 32 # perferable 4X d_model
+  sequence_length: 64 
+  stride: 1 # if stride is equal to sequence_length, the dataset will be created with no overlap, if the stride is equal to 1, the dataset will be created with full overlap
+  batch_size: 32
   learning_rate: 0.0005 # 0.0001
   max_epochs: 100
   patience: 10
@@ -16,7 +17,7 @@ hparams:
   train_split: 0.7  # Adjusted to give more data to validation
   val_split: 0.2   # Increased validation split
   num_workers: 0
-  accelerator: "gpu" #"auto"
+  accelerator: "auto" # "auto" | "gpu" | "cpu"
   devices: 1
   precision: "32"
   gradient_clip_val: 1.0

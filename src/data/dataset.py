@@ -59,6 +59,7 @@ class TextDataset(Dataset):
 
 def create_data_loaders(token_ids: List[int],
                        sequence_length: int = 64,
+                       stride: int = 1,
                        batch_size: int = 32,
                        train_split: float = 0.8,
                        val_split: float = 0.1,
@@ -69,6 +70,7 @@ def create_data_loaders(token_ids: List[int],
     Args:
         token_ids: List of token indices
         sequence_length: Length of input sequences
+        stride: Step size for sliding window
         batch_size: Batch size
         train_split: Fraction of data for training
         val_split: Fraction of data for validation
@@ -88,13 +90,14 @@ def create_data_loaders(token_ids: List[int],
     test_tokens = token_ids[val_end:]
     
     # Create datasets
-    train_dataset = TextDataset(train_tokens, sequence_length)
-    val_dataset = TextDataset(val_tokens, sequence_length)
-    test_dataset = TextDataset(test_tokens, sequence_length)
+    train_dataset = TextDataset(train_tokens, sequence_length, stride)
+    val_dataset = TextDataset(val_tokens, sequence_length, stride)
+    test_dataset = TextDataset(test_tokens, sequence_length, stride)
     
     # Create data loaders
     train_loader = DataLoader(
         train_dataset,
+        collate_fn=collate_fn,
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
@@ -103,6 +106,7 @@ def create_data_loaders(token_ids: List[int],
     
     val_loader = DataLoader(
         val_dataset,
+        collate_fn=collate_fn,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
@@ -111,6 +115,7 @@ def create_data_loaders(token_ids: List[int],
     
     test_loader = DataLoader(
         test_dataset,
+        collate_fn=collate_fn,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
@@ -155,6 +160,7 @@ class TextDataModule(pl.LightningDataModule):
     def __init__(self,
                  token_ids: List[int],
                  sequence_length: int = 64,
+                 stride: int = 1,
                  batch_size: int = 32,
                  train_split: float = 0.8,
                  val_split: float = 0.1,
@@ -173,6 +179,7 @@ class TextDataModule(pl.LightningDataModule):
         super().__init__()
         self.token_ids = token_ids
         self.sequence_length = sequence_length
+        self.stride = stride
         self.batch_size = batch_size
         self.train_split = train_split
         self.val_split = val_split
@@ -187,6 +194,7 @@ class TextDataModule(pl.LightningDataModule):
         self.train_loader, self.val_loader, self.test_loader = create_data_loaders(
             self.token_ids,
             self.sequence_length,
+            self.stride,
             self.batch_size,
             self.train_split,
             self.val_split,

@@ -49,7 +49,7 @@ def test_dataset(tokenizer, text):
     token_ids = tokenizer.encode(text)
     
     # Create dataset
-    dataset = TextDataset(token_ids, sequence_length=32)
+    dataset = TextDataset(token_ids, sequence_length=32, stride=1)
     print(f"Dataset size: {len(dataset)}")
     
     # Test data loading

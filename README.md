@@ -62,6 +62,12 @@ pip install -r requirements.txt
 python demo.py
 ```
 
+5. (Optional) Explore the Jupyter notebook for experimenting:
+```bash
+# Open in your IDE and select a kernel
+train_notebook.ipynb
+```
+
 ## Usage
 
 ### Quick Start
@@ -121,9 +127,10 @@ tensorboard --logdir=./logs
 # With default model (if available)
 python -m src.app.gradio_app
 
-# With the last trained model
+# Or with the last trained model
 python -m src.app.gradio_app --model_path ./checkpoints/transformer_lm-final.ckpt --vocab_path ./checkpoints/vocab.pkl
-# Or with specific trained model
+
+# Or with a specific version of the model (below with v01)
 python -m src.app.gradio_app --model_path ./checkpoints/transformer_lm-best-v01.ckpt --vocab_path ./checkpoints/vocab-v01.pkl
 ```
 
@@ -177,6 +184,19 @@ This will:
 - Test text generation
 - Provide next steps for training and deployment
 
+### Jupyter Notebook
+
+The `train_notebook.ipynb` provides an interactive environment for:
+
+```bash
+jupyter notebook train_notebook.ipynb
+```
+
+**Notebook features:**
+- **Step-by-step training process** - Understand each component
+- **Interactive debugging** - Inspect data, model, and training progress
+- **Experimentation** - Try different hyperparameters
+
 ## What This Project Demonstrates
 
 This project is a complete educational implementation of a small language model that shows:
@@ -193,9 +213,18 @@ This project is a complete educational implementation of a small language model 
 
 With the default configuration, you can expect:
 - **Model Size**: ~100K parameters (very small, fast training)
-- **Training Time**: 5-15 minutes on CPU, 1-3 minutes on GPU
+- **Training Time**: Depends on corpus size, vocabulary, and the type of CPU/GPU used. below are estimates for standard PC with simple GPU:
+  - **Small corpus** (~10K tokens): 15-30 minutes
+  - **Medium corpus** (~100K tokens): 4-6 hours
+  - **Large corpus** (~1M tokens): 15+ hours
 - **Text Quality**: Coherent short phrases and sentences (limited by small model size)
 - **Use Cases**: Educational purposes, understanding transformer internals, text generation experiments
+
+**Training time factors:**
+- **Corpus size** - More tokens = longer training
+- **Vocabulary size** - Larger vocab = more parameters to learn
+- **Sequence length** - Longer sequences = more computation per batch
+- **Hardware** - GPU significantly faster than CPU
 
 ## Next Steps
 

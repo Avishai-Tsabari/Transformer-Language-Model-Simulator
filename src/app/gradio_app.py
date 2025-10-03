@@ -341,8 +341,10 @@ class GradioApp:
                             gr.Markdown("### Current Sequence")
                             current_text = gr.Textbox(
                                 label="Generated Text:",
-                                lines=4,
-                                interactive=False
+                                lines=6,
+                                max_lines=6,
+                                interactive=False,
+                                show_copy_button=True
                             )
                             
                             gr.Markdown("### Controls")
