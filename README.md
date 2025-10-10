@@ -146,13 +146,13 @@ The project uses `config.yaml` for all hyperparameters and settings:
 
 ```yaml
 hparams:
-  vocab_size: 3000
-  d_model: 32
+  vocab_size: 8000
+  d_model: 8
   num_heads: 1
   num_layers: 2
-  sequence_length: 32
-  batch_size: 64
-  learning_rate: 0.0001
+  sequence_length: 64
+  batch_size: 32
+  learning_rate: 0.0005
   max_epochs: 100
   # ... more parameters
 
@@ -212,7 +212,7 @@ This project is a complete educational implementation of a small language model 
 ## Expected Results
 
 With the default configuration, you can expect:
-- **Model Size**: ~100K parameters (very small, fast training)
+- **Model Size**: ~20K parameters (very small, fast training)
 - **Training Time**: Depends on corpus size, vocabulary, and the type of CPU/GPU used. below are estimates for standard PC with simple GPU:
   - **Small corpus** (~10K tokens): 15-30 minutes
   - **Medium corpus** (~100K tokens): 4-6 hours
