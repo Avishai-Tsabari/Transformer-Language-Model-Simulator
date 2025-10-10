@@ -314,6 +314,149 @@ class GradioApp:
         self.current_text = ""
         return "", "", "[]", "Generation session reset"
     
+    def analyze_token_frequencies(self, corpus_path: str = "sample_corpus.txt") -> Tuple[str, str]:
+        """
+        Analyze token frequencies from the training corpus.
+        
+        Args:
+            corpus_path: Path to the corpus file
+            
+        Returns:
+            Tuple of (top_tokens_html, bottom_tokens_html)
+        """
+        if not self.tokenizer:
+            return "Error: Tokenizer not loaded", "Error: Tokenizer not loaded"
+        
+        try:
+            # Read corpus file
+            with open(corpus_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+            
+            # Tokenize the entire corpus
+            tokens = self.tokenizer.encode(text, add_special_tokens=False)
+            
+            # Count token frequencies
+            token_counts = {}
+            for token_id in tokens:
+                token_counts[token_id] = token_counts.get(token_id, 0) + 1
+            
+            # Get total token count
+            total_tokens = len(tokens)
+            
+            # Convert to list of (token_id, count, percentage) tuples
+            token_freq_data = []
+            for token_id, count in token_counts.items():
+                percentage = (count / total_tokens) * 100
+                # Get token text, handling special tokens properly
+                token_text = self._get_token_display_text(token_id)
+                token_freq_data.append((token_id, token_text, count, percentage))
+            
+            # Sort by frequency (descending)
+            token_freq_data.sort(key=lambda x: x[2], reverse=True)
+            
+            # Get top 20 and bottom 20 tokens
+            top_tokens = token_freq_data[:20]
+            bottom_tokens = token_freq_data[-20:]
+            
+            # Create HTML for top tokens
+            top_html = self._create_token_frequency_html(top_tokens, "Most Frequent Tokens")
+            
+            # Create HTML for bottom tokens  
+            bottom_html = self._create_token_frequency_html(bottom_tokens, "Least Frequent Tokens")
+            
+            return top_html, bottom_html
+            
+        except Exception as e:
+            return f"Error analyzing frequencies: {e}", f"Error analyzing frequencies: {e}"
+    
+    def _get_token_display_text(self, token_id: int) -> str:
+        """
+        Get display text for a token, handling special tokens properly.
+        
+        Args:
+            token_id: Token ID to get display text for
+            
+        Returns:
+            Display text for the token
+        """
+        try:
+            # Special token mappings based on what we know from the vocabulary
+            special_tokens = {
+                0: "<PAD>",
+                1: "<UNK>", 
+                2: "<SOS>",
+                3: "<EOS>",
+                4: "<LINE_BREAK>",
+                5: "<SONG_BREAK>"
+            }
+            
+            # Check if it's a special token first
+            if token_id in special_tokens:
+                return special_tokens[token_id]
+            
+            # For regular tokens, try to get from vocabulary first
+            if hasattr(self.tokenizer, 'idx_to_word') and token_id in self.tokenizer.idx_to_word:
+                token_text = self.tokenizer.idx_to_word[token_id]
+                return token_text
+            
+            # Fallback: try decoding without skipping special tokens first
+            token_text = self.tokenizer.decode([token_id], skip_special_tokens=False)
+            
+            # If that gives us something, return it
+            if token_text:
+                return token_text
+            
+            # If still empty, try with skipping special tokens
+            token_text = self.tokenizer.decode([token_id], skip_special_tokens=True)
+            
+            # If still empty, it might be a special token that gets skipped
+            if not token_text and token_id <= 5:
+                return special_tokens.get(token_id, f"<ID:{token_id}>")
+            
+            return token_text if token_text else f"<ID:{token_id}>"
+            
+        except:
+            return f"<ID:{token_id}>"
+    
+    def _create_token_frequency_html(self, token_data: list, title: str) -> str:
+        """
+        Create HTML display for token frequency data.
+        
+        Args:
+            token_data: List of (token_id, token_text, count, percentage) tuples
+            title: Title for the section
+            
+        Returns:
+            HTML string
+        """
+        html = f"<div style='font-family: monospace; font-size: 12px;'>"
+        html += f"<h4 style='margin-bottom: 10px; color: #2563eb;'>{title}</h4>"
+        
+        for i, (token_id, token_text, count, percentage) in enumerate(token_data):
+            # Don't escape HTML for special tokens, only escape & for safety
+            token_text = token_text.replace('&', '&amp;')
+            
+            # Create a simple bar visualization based on frequency
+            max_count = max([x[2] for x in token_data]) if token_data else 1
+            bar_width = min(100, (count / max_count) * 100)
+            
+            html += f"""
+            <div style='margin-bottom: 5px; padding: 2px 5px; background-color: #f8fafc; border-radius: 3px;'>
+                <div style='display: flex; justify-content: space-between; align-items: center;'>
+                    <span style='font-weight: bold; color: #1e40af;'>{i+1:2d}.</span>
+                    <span style='flex: 1; margin: 0 10px; color: #374151;'>"{token_text}"</span>
+                    <span style='color: #6b7280; font-size: 11px;'>{count:,}</span>
+                    <span style='color: #9ca3af; font-size: 11px;'>({percentage:.2f}%)</span>
+                </div>
+                <div style='width: 100%; background-color: #e5e7eb; border-radius: 2px; height: 4px; margin-top: 2px;'>
+                    <div style='width: {bar_width}%; background-color: #3b82f6; height: 4px; border-radius: 2px;'></div>
+                </div>
+            </div>
+            """
+        
+        html += "</div>"
+        return html
+    
     def create_interface(self) -> gr.Blocks:
         """
         Create the Gradio interface.
@@ -426,6 +569,33 @@ class GradioApp:
                                 interactive=False
                             )
                 
+                # Token Analysis Tab
+                with gr.Tab("Token Analysis"):
+                    with gr.Row():
+                        with gr.Column(scale=1):
+                            gr.Markdown("### Token Frequency Analysis")
+                            gr.Markdown("Analyze the most and least frequent tokens from the training corpus.")
+                            
+                            analyze_btn = gr.Button("Analyze Token Frequencies", variant="primary")
+                            
+                            gr.Markdown("### Analysis Info")
+                            analysis_info = gr.Markdown(
+                                "Click 'Analyze Token Frequencies' to analyze actual token usage from the training corpus. "
+                                "This shows the top 20 most frequent and bottom 20 least frequent tokens with real frequency counts and percentages."
+                            )
+                        
+                        with gr.Column(scale=1):
+                            top_tokens_display = gr.HTML(
+                                label="Most Frequent Tokens:",
+                                value="<div style='font-size: 14px; color: #6b7280;'>Click 'Analyze Token Frequencies' to load data.</div>"
+                            )
+                        
+                        with gr.Column(scale=1):
+                            bottom_tokens_display = gr.HTML(
+                                label="Least Frequent Tokens:",
+                                value="<div style='font-size: 14px; color: #6b7280;'>Click 'Analyze Token Frequencies' to load data.</div>"
+                            )
+                
             # Event handlers for full response generation
             generate_btn.click(
                 fn=self.generate_full_response,
@@ -456,6 +626,13 @@ class GradioApp:
                 fn=self.update_probabilities_only,
                 inputs=[temp_slider],
                 outputs=[probability_display, tokens_json, status_text]
+            )
+            
+            # Event handler for token analysis
+            analyze_btn.click(
+                fn=self.analyze_token_frequencies,
+                inputs=[],
+                outputs=[top_tokens_display, bottom_tokens_display]
             )
         
         return interface
